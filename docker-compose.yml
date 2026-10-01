@@ -1,0 +1,67 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-kibo}
+      MYSQL_USER: ${DB_USERNAME:-kibo}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-kibo}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    user: "999:999"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-kibo}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-kibo}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/${DB_NAME:-kibo}
+      DB_USERNAME: ${DB_USERNAME:-kibo}
+      DB_PASSWORD: ${DB_PASSWORD:-kibo}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-kibo}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-kibo}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

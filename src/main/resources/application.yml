@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/kibo}
+    username: ${DB_USERNAME:kibo}
+    password: ${DB_PASSWORD:kibo}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  hold-duration-seconds: ${HOLD_DURATION_SECONDS:300}
+  expiry-scan-ms: ${EXPIRY_SCAN_MS:10000}
