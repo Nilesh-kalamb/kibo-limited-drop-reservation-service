@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KIBO | Account access</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #17231e;
+            background: #f1f4ef;
+        }
+        * { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: radial-gradient(circle at 15% 15%, #e1eddf, transparent 38%), #f1f4ef;
+        }
+        main {
+            width: min(100%, 430px);
+            padding: 34px;
+            border: 1px solid #dce4db;
+            border-radius: 18px;
+            background: #fff;
+            box-shadow: 0 20px 60px #19342312;
+        }
+        .brand { margin: 0 0 8px; color: #286440; font-size: 13px; font-weight: 800; letter-spacing: .16em; }
+        h1 { margin: 0; font-size: 28px; letter-spacing: -.04em; }
+        .intro { margin: 9px 0 24px; color: #68756e; font-size: 14px; line-height: 1.5; }
+        .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 22px; padding: 4px; border-radius: 10px; background: #f0f3ef; }
+        .tab {
+            padding: 10px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: #66736b;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 650;
+            cursor: pointer;
+        }
+        .tab[aria-selected="true"] { background: #fff; color: #286440; box-shadow: 0 1px 4px #19342318; }
+        .field { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 650; }
+        input {
+            width: 100%;
+            padding: 12px 13px;
+            border: 1px solid #d7dfd8;
+            border-radius: 8px;
+            outline: none;
+            font: inherit;
+            font-size: 14px;
+        }
+        input:focus { border-color: #47845c; box-shadow: 0 0 0 3px #47845c20; }
+        .submit {
+            width: 100%;
+            margin-top: 5px;
+            padding: 12px;
+            border: 0;
+            border-radius: 8px;
+            background: #286440;
+            color: white;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .submit:disabled { opacity: .65; cursor: wait; }
+        .message { min-height: 20px; margin: 15px 0 0; color: #286440; font-size: 13px; line-height: 1.5; }
+        .message.error { color: #a33232; }
+        @media (max-width: 480px) { main { padding: 26px 22px; } }
+    </style>
+</head>
+<body>
+<main>
+    <p class="brand">KIBO LIMITED DROP</p>
+    <h1>Welcome</h1>
+    <p class="intro">Sign in to verify your account or create an account to get started.</p>
+
+    <div class="tabs" role="tablist" aria-label="Account action">
+        <button class="tab" id="login-tab" type="button" role="tab" aria-selected="true" aria-controls="auth-form">Log in</button>
+        <button class="tab" id="register-tab" type="button" role="tab" aria-selected="false" aria-controls="auth-form">Register</button>
+    </div>
+
+    <form id="auth-form">
+        <div class="field" id="name-field" hidden>
+            <label for="name">Name</label>
+            <input id="name" name="name" autocomplete="name">
+        </div>
+        <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="submit" id="submit" type="submit">Log in</button>
+        <p class="message" id="message" role="status" aria-live="polite"></p>
+    </form>
+</main>
+<script>
+    const form = document.getElementById("auth-form");
+    const nameField = document.getElementById("name-field");
+    const nameInput = document.getElementById("name");
+    const passwordInput = document.getElementById("password");
+    const submitButton = document.getElementById("submit");
+    const message = document.getElementById("message");
+    const tabs = {
+        login: document.getElementById("login-tab"),
+        register: document.getElementById("register-tab")
+    };
+    let mode = "login";
+
+    function selectMode(nextMode) {
+        mode = nextMode;
+        const registering = mode === "register";
+        nameField.hidden = !registering;
+        nameInput.required = registering;
+        passwordInput.autocomplete = registering ? "new-password" : "current-password";
+        submitButton.textContent = registering ? "Create account" : "Log in";
+        tabs.login.setAttribute("aria-selected", String(!registering));
+        tabs.register.setAttribute("aria-selected", String(registering));
+        message.textContent = "";
+        message.classList.remove("error");
+    }
+
+    tabs.login.addEventListener("click", () => selectMode("login"));
+    tabs.register.addEventListener("click", () => selectMode("register"));
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.textContent = "";
+        message.classList.remove("error");
+        submitButton.disabled = true;
+
+        const payload = {
+            email: form.elements.email.value.trim(),
+            password: form.elements.password.value
+        };
+        if (mode === "register") {
+            payload.name = nameInput.value.trim();
+        }
+
+        try {
+            const response = await fetch(`/api/auth/${mode}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || result.message || `Request failed (${response.status})`);
+            }
+            message.textContent = result.message || "Request successful";
+            form.elements.password.value = "";
+        } catch (error) {
+            message.textContent = error.message || "Unable to reach the server.";
+            message.classList.add("error");
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

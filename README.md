@@ -4,7 +4,13 @@ A reservation API for limited-inventory drops. MySQL is the source of truth: inv
 
 ## Requirements and startup
 
-Requires Docker Engine with Docker Compose. From the project root, run:
+For a local run without external services, start `AuthApplication` from the IDE or run:
+
+```shell
+mvn spring-boot:run -Dspring-boot.run.main-class=com.kibo.drop.AuthApplication
+```
+
+Local runs use an in-memory H2 database by default, so data is lost when the application stops. To run with persistent MySQL, Redis, and RabbitMQ using Docker Engine with Docker Compose, run:
 
 ```shell
 docker-compose up --build
@@ -25,6 +31,10 @@ mvn test
 ## API
 
 All JSON errors use an `error` field. Invalid request bodies return `400`, missing drops/holds return `404`, and business conflicts (for example, insufficient inventory, an expired hold, or a repeated transition) return `409`.
+
+### Browser authentication
+
+Open `http://localhost:8080/` for the browser login and registration page. Use the same email and password for login that you submitted when registering.
 
 ### List drops
 
